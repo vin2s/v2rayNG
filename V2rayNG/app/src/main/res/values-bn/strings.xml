@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (ঐচ্ছিক, ডিফল্ট 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (ঐচ্ছিক, ডিফল্ট 50 মিলিসেকেন্ড)</string>
     <string name="toast_success">সফল</string>
+    <string name="toast_failover_switched">%1$s-এ স্যুইচ করা হয়েছে</string>
     <string name="toast_failure">ব্যর্থ</string>
     <string name="toast_none_data">কোনও তথ্য নেই</string>
     <string name="toast_incorrect_protocol">ভুল প্রোটোকল</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">Wi-Fi হটস্পট ও USB-টেদার করা ডিভাইসের ট্রাফিক VPN-এর মাধ্যমে রাউট করুন।</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">সংযোগ লগ</string>
+    <string name="connection_log_empty">এখনও কোনো সংযোগ ইভেন্ট নেই</string>
+    <string name="connection_log_unknown">অজানা সার্ভার</string>
+    <string name="connection_log_start">সংযুক্ত: %1$s</string>
+    <string name="connection_log_stop">বিচ্ছিন্ন: %1$s</string>
+    <string name="connection_log_failover">স্বয়ংক্রিয় পরিবর্তন: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">সবচেয়ে দ্রুত নির্বাচিত: %1$s</string>
+    <string name="acc_clear_connection_log">সংযোগ লগ মুছুন</string>
     <string name="logcat_copy">কপি করুন</string>
     <string name="logcat_clear">পরিষ্কার করুন</string>
     <string name="logcat_share">লগ শেয়ার করুন</string>

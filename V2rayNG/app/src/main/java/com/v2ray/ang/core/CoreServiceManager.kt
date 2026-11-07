@@ -20,6 +20,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.BrowserDialerMode
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.handler.ConnectionLog
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.SettingsManager
@@ -33,8 +34,10 @@ import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -52,7 +55,9 @@ object CoreServiceManager {
     private var processFinder: XrayProcessFinder? = null
     private var browserDialer: IDialerService? = null
     private var networkMonitor: NetworkMonitor? = null
-    private val connectionTestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lifecycleJob = SupervisorJob()
+    private val connectionTestScope = CoroutineScope(lifecycleJob + Dispatchers.IO)
+    private var delayTestJob: Job? = null
 
     @Volatile
     private var isReloading = false
@@ -179,8 +184,10 @@ object CoreServiceManager {
 
         if (!isReload) {
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_SUCCESS, "")
+            ConnectionLog.recordStart(config.remarks)
         }
         NotificationManager.startSpeedNotification()
+        CoreFailoverWatch.start(connectionTestScope)
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core started successfully")
     }
 
@@ -190,7 +197,8 @@ object CoreServiceManager {
      * @return True if the core was stopped successfully, false otherwise.
      */
     fun stopCoreLoop(): Boolean {
-        connectionTestScope.coroutineContext.cancelChildren()
+        CoreFailoverWatch.stop()
+        lifecycleJob.cancelChildren()
         val service = getService() ?: return false
 
         networkMonitor?.unregister()
@@ -214,6 +222,7 @@ object CoreServiceManager {
             browserDialer = null
         }
 
+        currentConfig?.remarks?.let { ConnectionLog.recordStop(it) }
         MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_STOP_SUCCESS, "")
         NotificationManager.cancelNotification()
 
@@ -252,6 +261,12 @@ object CoreServiceManager {
      *
      * @return True if the core is running again.
      */
+    internal fun isReloadingCore(): Boolean = isReloading
+
+    internal fun getServiceContext(): Service? = getService()
+
+    internal fun reloadCoreAfterFailover(): Boolean = reloadCore()
+
     private fun reloadCore(): Boolean {
         if (isReloading) return false
         val service = getService() ?: return false
@@ -261,7 +276,7 @@ object CoreServiceManager {
             val tunFd = currentVpnInterface
 
             isReloading = true
-            connectionTestScope.coroutineContext.cancelChildren()
+            delayTestJob?.cancel()
             LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload start...")
 
             coreController.stopLoop()
@@ -316,6 +331,25 @@ object CoreServiceManager {
      * Tests with primary URL first, then falls back to alternative URL if needed.
      * Also fetches remote IP information if the delay test was successful.
      */
+    internal suspend fun probeCurrentDelayMillis(): Long {
+        if (!isRunning() || isReloading) return -1L
+        var time = -1L
+        try {
+            time = coreController.measureDelay(SettingsManager.getDelayTestUrl())
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to measure delay", e)
+        }
+        if (time == -1L) {
+            currentCoroutineContext().ensureActive()
+            try {
+                time = coreController.measureDelay(SettingsManager.getDelayTestUrl(true))
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to measure delay", e)
+            }
+        }
+        return time
+    }
+
     private fun measureV2rayDelay(requestId: String) {
         val service = getService() ?: return
         if (!isRunning() || isReloading) {
@@ -323,8 +357,8 @@ object CoreServiceManager {
             return
         }
 
-        connectionTestScope.coroutineContext.cancelChildren()
-        connectionTestScope.launch {
+        delayTestJob?.cancel()
+        delayTestJob = connectionTestScope.launch {
             var time = -1L
             var errorStr = ""
 
@@ -352,6 +386,10 @@ object CoreServiceManager {
                 country = endpoint?.country,
                 ipAddress = endpoint?.ipAddress,
             )
+            val selectedGuid = MmkvManager.getSelectServer()
+            if (time >= 0L) {
+                selectedGuid?.let { CoreFailoverWatch.markCurrentHealthy(it) }
+            }
             withContext(Dispatchers.Main.immediate) {
                 if (isRunning()) {
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_RESULT, result, requestId)
@@ -359,9 +397,14 @@ object CoreServiceManager {
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_CANCEL, "", requestId)
                 }
             }
-        }.invokeOnCompletion { cause ->
-            if (cause is CancellationException) {
-                MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_CANCEL, "", requestId)
+            if (time < 0L) {
+                CoreFailoverWatch.switchIfUnreachable()
+            }
+        }.also { job ->
+            job.invokeOnCompletion { cause ->
+                if (cause is CancellationException) {
+                    MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_CANCEL, "", requestId)
+                }
             }
         }
     }

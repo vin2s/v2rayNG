@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU（可選，預設 1350）</string>
     <string name="server_lab_kcp_tti">mKCP TTI（可選，預設 50 毫秒）</string>
     <string name="toast_success">成功</string>
+    <string name="toast_failover_switched">已切換到 %1$s</string>
     <string name="toast_failure">失敗</string>
     <string name="toast_none_data">無資料</string>
     <string name="toast_incorrect_protocol">通訊協定不正確</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">將 Wi-Fi 熱點和 USB 網路共享裝置的流量透過 VPN 轉送。</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">連線紀錄</string>
+    <string name="connection_log_empty">尚無連線事件</string>
+    <string name="connection_log_unknown">未知伺服器</string>
+    <string name="connection_log_start">已連線：%1$s</string>
+    <string name="connection_log_stop">已中斷：%1$s</string>
+    <string name="connection_log_failover">自動切換：%1$s → %2$s</string>
+    <string name="connection_log_auto_select">已選擇最快：%1$s</string>
+    <string name="acc_clear_connection_log">清除連線紀錄</string>
     <string name="logcat_copy">複製</string>
     <string name="logcat_clear">清除</string>
     <string name="logcat_share">分享日誌</string>

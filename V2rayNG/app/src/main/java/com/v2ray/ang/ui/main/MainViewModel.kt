@@ -18,6 +18,7 @@ import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
+import com.v2ray.ang.handler.ConnectionLog
 import com.v2ray.ang.handler.SubscriptionInfoParser
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
@@ -145,6 +146,13 @@ class MainViewModel(
             }
 
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
+            is MainServiceEvent.SelectedServerChanged -> {
+                if (event.guid.isBlank()) return
+                _uiState.update { it.copy(selectedGuid = event.guid) }
+                val remarks = dataSource.decodeServerConfig(event.guid)?.remarks.orEmpty()
+                    .ifBlank { event.guid }
+                toastSuccess(dataSource.getString(R.string.toast_failover_switched, remarks))
+            }
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
                 _uiState.update { it.copy(isTesting = testRequests.isTesting, status = MainStatus.ConnectionTest(event.result)) }
@@ -205,17 +213,22 @@ class MainViewModel(
             val drained = pendingTestResults.toMap()
             pendingTestResults.clear()
             groupDataCache[request.groupId]?.let { cached ->
-                groupDataCache[request.groupId] = applyTestDelayResults(cached, drained)
+                groupDataCache[request.groupId] = liveTestOrder(
+                    applyTestDelayResults(cached, drained)
+                ) { it.testDelayMillis }
             }
             drained
         }
         if (updates.isEmpty()) return
         if (testRequests.bulk?.id != request.id) return
         mutableServerGroupState(request.groupId).update { current ->
-            current.copy(
-                servers = applyTestDelayResults(current.servers, updates),
-                rows = applyTestDelayResultsToRows(current.rows, updates),
-            )
+            val servers = liveTestOrder(
+                applyTestDelayResults(current.servers, updates)
+            ) { it.testDelayMillis }
+            val rows = liveTestOrder(
+                applyTestDelayResultsToRows(current.rows, updates)
+            ) { it.testDelayMillis }
+            current.copy(servers = servers, rows = rows)
         }
     }
 
@@ -293,6 +306,8 @@ class MainViewModel(
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
             MainAction.LocateHandled -> consumeLocateTarget()
+            MainAction.ConsumeAutoSelect ->
+                _uiState.update { it.copy(pendingAutoSelectGuid = null) }
             is MainAction.ShareQRCode -> {
                 val bitmap = dataSource.share2QRCode(action.guid)
                 _uiState.update { it.copy(shareQRCodeBitmap = bitmap) }
@@ -543,40 +558,45 @@ class MainViewModel(
 
     private fun importConfigViaSub(subId: String) {
         launchLoading {
-            withContext(ioDispatcher) {
-                try {
-                    val result = if (subId.isEmpty()) {
-                        dataSource.updateConfigViaSubAll()
-                    } else {
-                        val item = dataSource.getSubscriptionItem(subId) ?: return@withContext
-                        dataSource.updateConfigViaSub(SubscriptionCache(subId, item))
-                    }
-                    when {
-                        result.successCount + result.failureCount + result.skipCount == 0 ->
-                            toast(R.string.title_update_subscription_no_subscription)
+            _uiState.update { it.copy(isUpdatingSubscriptions = true) }
+            try {
+                withContext(ioDispatcher) {
+                    try {
+                        val result = if (subId.isEmpty()) {
+                            dataSource.updateConfigViaSubAll()
+                        } else {
+                            val item = dataSource.getSubscriptionItem(subId) ?: return@withContext
+                            dataSource.updateConfigViaSub(SubscriptionCache(subId, item))
+                        }
+                        when {
+                            result.successCount + result.failureCount + result.skipCount == 0 ->
+                                toast(R.string.title_update_subscription_no_subscription)
 
-                        result.successCount > 0 && result.failureCount + result.skipCount == 0 ->
-                            toast(
-                                getQuantityString(
-                                    R.plurals.title_update_config_count,
-                                    result.configCount,
-                                    result.configCount,
+                            result.successCount > 0 && result.failureCount + result.skipCount == 0 ->
+                                toast(
+                                    getQuantityString(
+                                        R.plurals.title_update_config_count,
+                                        result.configCount,
+                                        result.configCount,
+                                    )
                                 )
-                            )
 
-                        else ->
-                            toast(dataSource.getString(R.string.title_update_subscription_result, result.configCount, result.successCount, result.failureCount, result.skipCount))
+                            else ->
+                                toast(dataSource.getString(R.string.title_update_subscription_result, result.configCount, result.successCount, result.failureCount, result.skipCount))
+                        }
+                        if (result.configCount > 0) {
+                            setupGroupTab(forceRefresh = true)
+                            refreshSelectedGuid()
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (e: Exception) {
+                        LogUtil.e(AppConfig.TAG, "Subscription update failed", e)
+                        toastError(R.string.toast_failure)
                     }
-                    if (result.configCount > 0) {
-                        setupGroupTab(forceRefresh = true)
-                        refreshSelectedGuid()
-                    }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Subscription update failed", e)
-                    toastError(R.string.toast_failure)
                 }
+            } finally {
+                _uiState.update { it.copy(isUpdatingSubscriptions = false) }
             }
         }
     }
@@ -899,9 +919,36 @@ class MainViewModel(
     }
 
     private fun onTestsFinished(requestId: String) {
-        if (testRequests.completeBulk(requestId) == null) return
+        val finished = testRequests.completeBulk(requestId) ?: return
+        val servers = mutableServerGroupState(finished.groupId).value.servers
+        val fastest = servers.firstOrNull { it.guid == fastestWorkingServerGuid(servers) }
         resetTestStatus()
+        if (fastest != null) {
+            val delay = dataSource.getString(R.string.server_test_delay_value, fastest.testDelayMillis)
+            toastSuccess(
+                dataSource.getString(
+                    R.string.toast_auto_select_fastest,
+                    fastest.profile.remarks.ifBlank { fastest.guid },
+                    delay
+                )
+            )
+            if (fastest.guid != _uiState.value.selectedGuid) {
+                val previousName = currentServers()
+                    .firstOrNull { it.guid == _uiState.value.selectedGuid }
+                    ?.profile
+                    ?.remarks
+                    .orEmpty()
+                ConnectionLog.recordAutoSelect(
+                    fromName = previousName,
+                    toName = fastest.profile.remarks,
+                )
+                _uiState.update { it.copy(pendingAutoSelectGuid = fastest.guid) }
+            }
+        } else {
+            toastError(R.string.toast_auto_select_none)
+        }
         viewModelScope.launch(ioDispatcher) {
+            dataSource.sortByTestResultsForSub(finished.groupId)
             cacheMutex.withLock { groupDataCache.clear() }
             reloadAllGroups(_uiState.value.groups.map { it.id })
         }

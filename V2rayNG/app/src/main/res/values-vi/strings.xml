@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (không bắt buộc, mặc định 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (không bắt buộc, mặc định 50 ms)</string>
     <string name="toast_success">Thành công!</string>
+    <string name="toast_failover_switched">Đã chuyển sang %1$s</string>
     <string name="toast_failure">Đã xảy ra lỗi, vui lòng thử lại!</string>
     <string name="toast_none_data">Không có gì ở đây!</string>
     <string name="toast_incorrect_protocol">Giao thức không hợp lệ.</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">Định tuyến lưu lượng từ thiết bị dùng điểm phát Wi-Fi và chia sẻ kết nối USB qua VPN.</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">Nhật ký kết nối</string>
+    <string name="connection_log_empty">Chưa có sự kiện kết nối</string>
+    <string name="connection_log_unknown">Máy chủ không xác định</string>
+    <string name="connection_log_start">Đã kết nối: %1$s</string>
+    <string name="connection_log_stop">Đã ngắt: %1$s</string>
+    <string name="connection_log_failover">Tự chuyển: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">Đã chọn nhanh nhất: %1$s</string>
+    <string name="acc_clear_connection_log">Xóa nhật ký kết nối</string>
     <string name="logcat_copy">Sao chép</string>
     <string name="logcat_clear">Xoá</string>
     <string name="logcat_share">Chia sẻ nhật ký</string>

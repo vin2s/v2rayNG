@@ -148,12 +148,7 @@ object CoreConfigContextBuilder {
                 .asSequence()
                 .mapNotNull { id -> MmkvManager.decodeServerConfig(id) }
                 .filter { profile ->
-                    val subscriptionId = config.policyGroupSubscriptionId
-                    if (subscriptionId.isNullOrBlank()) {
-                        true
-                    } else {
-                        profile.subscriptionId == subscriptionId
-                    }
+                    isPolicyGroupMember(config, profile)
                 }
                 .filter { profile ->
                     val filter = config.policyGroupFilter

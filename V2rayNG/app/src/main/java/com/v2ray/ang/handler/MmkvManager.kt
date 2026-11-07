@@ -17,6 +17,7 @@ import com.v2ray.ang.AppConfig.PREF_IS_BOOTED
 import com.v2ray.ang.AppConfig.PREF_ROUTING_RULESET
 import com.v2ray.ang.AppConfig.TAG
 import com.v2ray.ang.BuildConfig
+import com.v2ray.ang.dto.ConnectionLogEntry
 import com.v2ray.ang.dto.entities.AssetUrlCache
 import com.v2ray.ang.dto.entities.AssetUrlItem
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -45,6 +46,8 @@ object MmkvManager {
     private const val ID_SUB = "SUB"
     private const val ID_ASSET = "ASSET"
     private const val ID_SETTING = "SETTING"
+    private const val ID_CONNECTION_LOG = "CONNECTION_LOG"
+    private const val KEY_CONNECTION_LOG = "ENTRIES"
     private const val KEY_SELECTED_SERVER = "SELECTED_SERVER"
     private const val KEY_ANG_CONFIGS = "ANG_CONFIGS"
     private const val KEY_SUB_SERVER_PREFIX = "SUB_SERVERS_"
@@ -76,6 +79,8 @@ object MmkvManager {
     private val subStorage by lazy { MMKV.mmkvWithID(ID_SUB, MMKV.MULTI_PROCESS_MODE) }
     private val assetStorage by lazy { MMKV.mmkvWithID(ID_ASSET, MMKV.MULTI_PROCESS_MODE) }
     private val settingsStorage by lazy { MMKV.mmkvWithID(ID_SETTING, MMKV.MULTI_PROCESS_MODE) }
+    private val connectionLogStorage by lazy { MMKV.mmkvWithID(ID_CONNECTION_LOG, MMKV.MULTI_PROCESS_MODE) }
+    private val connectionLogLock = Any()
 
     private inline fun <T> withProfileIndexLock(block: () -> T): T {
         return synchronized(mainStorage) {
@@ -1050,4 +1055,26 @@ object MmkvManager {
     }
 
     //endregion
+
+    fun decodeConnectionLog(): List<ConnectionLogEntry> = synchronized(connectionLogLock) {
+        ConnectionLogEntries.parse(connectionLogStorage.decodeString(KEY_CONNECTION_LOG))
+    }
+
+    fun appendConnectionLog(entry: ConnectionLogEntry) {
+        synchronized(connectionLogLock) {
+            val next = ConnectionLogEntries.append(decodeConnectionLogUnlocked(), entry)
+            if (!connectionLogStorage.encode(KEY_CONNECTION_LOG, JsonUtil.toJson(next))) {
+                Log.e(TAG, "Failed to persist connection log")
+            }
+        }
+    }
+
+    fun clearConnectionLog() {
+        synchronized(connectionLogLock) {
+            connectionLogStorage.removeValueForKey(KEY_CONNECTION_LOG)
+        }
+    }
+
+    private fun decodeConnectionLogUnlocked(): List<ConnectionLogEntry> =
+        ConnectionLogEntries.parse(connectionLogStorage.decodeString(KEY_CONNECTION_LOG))
 }

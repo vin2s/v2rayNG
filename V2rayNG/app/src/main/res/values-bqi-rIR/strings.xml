@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (اختیاری، پؽش فرز 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (اختیاری، پؽش فرز 50 میلی‌سانیه)</string>
     <string name="toast_success">وا مووفقیت ٱنجوم وابی</string>
+    <string name="toast_failover_switched">بی %1$s عوص کرد</string>
     <string name="toast_failure">شکست خرد</string>
     <string name="toast_none_data">هیچ داده ای وۊجۊڌ نڌاره</string>
     <string name="toast_incorrect_protocol">پوروتوکول نادوروست</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">ترافیک هات‌اسپات وای‌فای وو دسگا یل منپیز وابیڌه وا USB (تترینگ) ن ز تور VPN بفشنین.</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">گوزارش منپیز</string>
+    <string name="connection_log_empty">هنی رویدادی نیس</string>
+    <string name="connection_log_unknown">سرور نادیار</string>
+    <string name="connection_log_start">منپیز وابی: %1$s</string>
+    <string name="connection_log_stop">قطع وابی: %1$s</string>
+    <string name="connection_log_failover">عوص خودکار: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">سریعترین انتخاب وابی: %1$s</string>
+    <string name="acc_clear_connection_log">روفتن گوزارش منپیز</string>
     <string name="logcat_copy">لف گیری</string>
     <string name="logcat_clear">روفتن</string>
     <string name="logcat_share">یک رسۊوی گوزارش</string>

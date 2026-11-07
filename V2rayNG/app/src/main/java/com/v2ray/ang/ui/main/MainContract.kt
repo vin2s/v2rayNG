@@ -26,7 +26,9 @@ data class MainUiState(
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
-    val shareQRCodeBitmap: android.graphics.Bitmap? = null
+    val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    val isUpdatingSubscriptions: Boolean = false,
+    val pendingAutoSelectGuid: String? = null,
 )
 
 /**
@@ -69,4 +71,5 @@ sealed interface MainAction {
     data class ImportBatchConfig(val configText: String) : MainAction
 
     data object LocateHandled : MainAction
+    data object ConsumeAutoSelect : MainAction
 }

@@ -108,6 +108,9 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (optional, default 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (optional, default 50 ms)</string>
     <string name="toast_success">Success</string>
+    <string name="toast_auto_select_fastest">Selected fastest: %1$s (%2$s)</string>
+    <string name="toast_auto_select_none">No working servers in this group</string>
+    <string name="toast_failover_switched">Switched to %1$s</string>
     <string name="toast_failure">Failure</string>
     <string name="toast_none_data">No data available</string>
     <string name="toast_incorrect_protocol">Incorrect protocol</string>
@@ -321,6 +324,14 @@
     <string name="summary_root_lan_sharing">Route traffic from Wi-Fi hotspot and USB-tethered devices through the VPN.</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">Connection log</string>
+    <string name="connection_log_empty">No connection events yet</string>
+    <string name="connection_log_unknown">Unknown server</string>
+    <string name="connection_log_start">Connected: %1$s</string>
+    <string name="connection_log_stop">Disconnected: %1$s</string>
+    <string name="connection_log_failover">Auto-switched: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">Fastest selected: %1$s</string>
+    <string name="acc_clear_connection_log">Clear connection log</string>
     <string name="logcat_copy">Copy</string>
     <string name="logcat_clear">Clear</string>
     <string name="logcat_share">Share log</string>

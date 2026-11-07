@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (اختياري، الافتراضي 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (اختياري، الافتراضي 50 مللي ثانية)</string>
     <string name="toast_success">نجاح</string>
+    <string name="toast_failover_switched">تم التبديل إلى %1$s</string>
     <string name="toast_failure">فشل</string>
     <string name="toast_none_data">لا يوجد شيء</string>
     <string name="toast_incorrect_protocol">بروتوكول غير صحيح</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">توجيه حركة مرور أجهزة نقطة اتصال Wi-Fi والأجهزة المربوطة عبر USB من خلال VPN.</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">سجل الاتصال</string>
+    <string name="connection_log_empty">لا توجد أحداث اتصال بعد</string>
+    <string name="connection_log_unknown">خادم غير معروف</string>
+    <string name="connection_log_start">تم الاتصال: %1$s</string>
+    <string name="connection_log_stop">تم قطع الاتصال: %1$s</string>
+    <string name="connection_log_failover">تبديل تلقائي: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">تم اختيار الأسرع: %1$s</string>
+    <string name="acc_clear_connection_log">مسح سجل الاتصال</string>
     <string name="logcat_copy">نسخ</string>
     <string name="logcat_clear">مسح</string>
     <string name="logcat_share">مشاركة السجل</string>

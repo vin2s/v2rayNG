@@ -108,6 +108,7 @@
     <string name="server_lab_kcp_mtu">mKCP MTU (istəyə bağlı, standart 1350)</string>
     <string name="server_lab_kcp_tti">mKCP TTI (istəyə bağlı, standart 50 ms)</string>
     <string name="toast_success">Uğurlu</string>
+    <string name="toast_failover_switched">%1$s-ə keçildi</string>
     <string name="toast_failure">Uğursuz</string>
     <string name="toast_none_data">Əlçatan məlumat yoxdur</string>
     <string name="toast_incorrect_protocol">Yanlış protokol</string>
@@ -321,6 +322,14 @@
     <string name="summary_root_lan_sharing">Wi-Fi giriş nöqtəsi (hotspot) və USB modem rejiminə qoşulmuş cihazların trafikini VPN vasitəsilə yönləndirin.</string>
 
     <string name="title_logcat" translatable="false">Logcat</string>
+    <string name="title_connection_log">Bağlantı jurnali</string>
+    <string name="connection_log_empty">Hələ bağlantı hadisəsi yoxdur</string>
+    <string name="connection_log_unknown">Naməlum server</string>
+    <string name="connection_log_start">Qoşuldu: %1$s</string>
+    <string name="connection_log_stop">Ayrıldı: %1$s</string>
+    <string name="connection_log_failover">Avtomatik keçid: %1$s → %2$s</string>
+    <string name="connection_log_auto_select">Ən sürətlisi seçildi: %1$s</string>
+    <string name="acc_clear_connection_log">Bağlantı jurnalını təmizlə</string>
     <string name="logcat_copy">Kopyala</string>
     <string name="logcat_clear">Təmizlə</string>
     <string name="logcat_share">Jurnalı paylaş</string>
