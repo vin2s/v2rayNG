@@ -1,0 +1,51 @@
+name: Sync 2dust upstream
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Merge 2dust/v2rayNG into a PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/2dust/v2rayNG.git 2>/dev/null || \
+            git remote set-url upstream https://github.com/2dust/v2rayNG.git
+          git fetch origin master
+          git fetch upstream master
+          UPSTREAM_SHA=$(git rev-parse upstream/master)
+          SHORT_SHA=${UPSTREAM_SHA:0:8}
+          if git merge-base --is-ancestor "$UPSTREAM_SHA" origin/master; then
+            echo "Already contains 2dust master $SHORT_SHA"
+            exit 0
+          fi
+          git checkout -B sync/upstream origin/master
+          if git merge --no-edit "$UPSTREAM_SHA"; then
+            git push -u origin sync/upstream --force
+            EXISTING=$(gh pr list --base master --head sync/upstream --json number --jq '.[0].number // empty')
+            if [ -z "$EXISTING" ]; then
+              gh pr create --base master --head sync/upstream \
+                --title "Sync official 2dust/v2rayNG ($SHORT_SHA)" \
+                --body "Автослияние с https://github.com/2dust/v2rayNG (\`master\` \`$SHORT_SHA\`). Свои FAB/failover/журнал не трогаются, пока PR не смержишь. Проверь конфликты и поведение перед merge."
+            fi
+          else
+            git merge --abort
+            echo "::error::Конфликт с 2dust. Локально: git fetch upstream && git merge upstream/master"
+            exit 1
+          fi
